@@ -424,9 +424,24 @@ npm test
 
 MIT © [Marcus Pöhls](https://futurestud.io)
 
+## Acknowledgments
+
+This package is a fork of the [hapi-rate-limitor](https://github.com/futurestudio/hapi-rate-limitor) created by [Marcus Pöhls](https://github.com/marcuspoehls) and the [Future Studio](https://futurestud.io) team.
+
+**Original Repository**: [futurestudio/hapi-rate-limitor](https://github.com/futurestudio/hapi-rate-limitor)
+
+We are grateful for their work and contributions to the hapi.js ecosystem. This fork maintains compatibility with the original while adding enhanced documentation and examples, particularly around Redis Cluster support.
+
+If you find this package useful, please consider:
+- ⭐ Starring the [original repository](https://github.com/futurestudio/hapi-rate-limitor)
+- 💖 Supporting [Future Studio](https://futurestud.io)
+- 🤝 Contributing back improvements to the upstream project
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+For changes that could benefit the broader community, consider contributing to the [original repository](https://github.com/futurestudio/hapi-rate-limitor) as well.
 
 ## Credits
 
