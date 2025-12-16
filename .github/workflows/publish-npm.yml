@@ -1,0 +1,62 @@
+# Automated NPM Publishing and GitHub Release Workflow
+#
+# This workflow automatically:
+# 1. Runs when you push a version tag (e.g., v4.0.1, v4.1.0)
+# 2. Installs dependencies and runs tests
+# 3. Publishes the package to npm registry
+# 4. Creates a GitHub Release with auto-generated release notes
+#
+# How to trigger:
+#   npm version patch  # Bumps version and creates tag
+#   git push origin master --follow-tags
+#
+# Requirements:
+#   - NPM_TOKEN secret must be added to repository secrets
+#   - GITHUB_TOKEN is automatically provided (no setup needed)
+
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - "v*" # Triggers on version tags like v4.0.1, v4.1.0, etc.
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required to create GitHub releases
+      id-token: write # Required for npm provenance
+
+    environment:
+      name: npm-publish
+      url: https://www.npmjs.com/package/@perdieminc/hapi-rate-limitor
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to NPM
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          draft: true
+          prerelease: false
