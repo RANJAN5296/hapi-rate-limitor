@@ -26,11 +26,7 @@ jobs:
 
     permissions:
       contents: write # Required to create GitHub releases
-      id-token: write # Required for npm provenance
-
-    environment:
-      name: npm-publish
-      url: https://www.npmjs.com/package/@perdieminc/hapi-rate-limitor
+      id-token: write # Required for npm provenance (Trusted Publisher)
 
     steps:
       - name: Checkout code
@@ -43,7 +39,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to NPM
-        run: npm publish --access public --provenance
+        run: npm publish
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
