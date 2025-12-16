@@ -1,11 +1,9 @@
 {
-  "name": "hapi-rate-limitor",
+  "name": "@perdieminc/hapi-rate-limitor",
   "description": "Rate limiting for hapi/hapi.js to prevent brute-force attacks",
   "version": "4.0.1",
   "author": "Marcus Pöhls <marcus@futurestud.io>",
-  "bugs": {
-    "url": "https://github.com/futurestudio/hapi-rate-limitor/issues"
-  },
+
   "dependencies": {
     "@hapi/boom": "~10.0.1",
     "@supercharge/request-ip": "~1.2.0",
@@ -30,7 +28,7 @@
   "engines": {
     "node": ">=18"
   },
-  "homepage": "https://github.com/futurestudio/hapi-rate-limitor#readme",
+  "homepage": "https://github.com/perdieminc/hapi-rate-limitor#readme",
   "husky": {
     "hooks": {
       "pre-push": "npm run lint"
@@ -56,7 +54,7 @@
   "types": "typings",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/futurestudio/hapi-rate-limitor.git"
+    "url": "git+https://github.com/perdieminc/hapi-rate-limitor.git"
   },
   "scripts": {
     "coverage": "npm test",

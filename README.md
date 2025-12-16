@@ -1,329 +1,441 @@
-<div align="center">
-  <img src="https://github.com/futurestudio/hapi-rate-limitor/blob/master/media/hapi-rate-limitor.png?raw=true" alt="hapi-rate-limitor logo" width="471" style="max-width:100%;">
-  <br/>
-  <br/>
+# @perdieminc/hapi-rate-limitor
 
-  <p>
-    Solid and easy to use rate limiting for hapi.
-  </p>
-  <br/>
-  <p>
-    <a href="#installation"><strong>Installation</strong></a> ·
-    <a href="#usage"><strong>Usage</strong></a> ·
-    <a href="#plugin-options"><strong>Plugin Options</strong></a> ·
-    <a href="#route-options"><strong>Route Options</strong></a> ·
-    <a href="#response-headers"><strong>Response Headers</strong></a>
-  </p>
-  <br/>
-  <br/>
-  <p>
-    <a href="https://travis-ci.org/futurestudio/hapi-rate-limitor"><img src="https://travis-ci.org/futurestudio/hapi-rate-limitor.svg?branch=master" alt="Build Status"></a>
-    <a href="https://snyk.io/test/github/futurestudio/hapi-rate-limitor"><img src="https://snyk.io/test/github/futurestudio/hapi-rate-limitor/badge.svg" alt="Known Vulnerabilities"></a>
-    <a href="https://www.npmjs.com/package/hapi-rate-limitor"><img src="https://img.shields.io/npm/v/hapi-rate-limitor.svg" alt="Latest Version"></a>
-      <a href="https://www.npmjs.com/package/hapi-rate-limitor"><img src="https://img.shields.io/npm/dm/hapi-rate-limitor.svg" alt="Total downloads"></a>
-  </p>
-  <p>
-    <em>Follow <a href="http://twitter.com/marcuspoehls">@marcuspoehls</a> for updates!</em>
-  </p>
-</div>
+[![NPM Version](https://img.shields.io/npm/v/@perdieminc/hapi-rate-limitor.svg?style=flat-square)](https://www.npmjs.com/package/@perdieminc/hapi-rate-limitor)
+[![Node.js Version](https://img.shields.io/node/v/@perdieminc/hapi-rate-limitor.svg?style=flat-square)](https://nodejs.org)
 
-------
+A powerful rate limiting plugin for hapi.js that helps prevent brute-force attacks and API abuse.
 
-<p align="center"><sup>The <a href="https://futurestud.io">Future Studio University</a> supports development of this hapi plugin 🚀</sup>
-<br><b>
-Join the <a href="https://futurestud.io/university">Future Studio University and Skyrocket in Node.js</a></b>
-</p>
+## Features
 
-------
-
-
-## Introduction
-A hapi plugin to prevent brute-force attacks in your app. The rate limiter uses [Redis](https://redis.io/) to store rate-limit related data.
-
-`hapi-rate-limitor` is built on top of these solid and awesome projects:
-
-- [async-ratelimiter](https://github.com/microlinkhq/async-ratelimiter)
-- [ioredis](https://github.com/luin/ioredis)
-- [request-ip](https://github.com/pbojinov/request-ip)
-
-Each package solves its own problem perfectly. `hapi-rate-limitor` composes the solutions of each problem to a solid rate limit plugin for hapi.
-
+- 🚀 **Custom Redis Support**: Works with both standard Redis instances and Redis Cluster
+- 🔒 **Flexible Rate Limiting**: Global, route-specific, and user-specific limits
+- 🎯 **IP-based & User-based**: Rate limit by IP address or authenticated user
+- 📊 **Response Headers**: Automatic rate limit headers (`X-Rate-Limit-*`)
+- 🎨 **Custom Views**: Render custom views when rate limit is exceeded
+- ⚡ **Event Emitters**: Hook into rate limiting events
+- 🔧 **Highly Configurable**: Whitelist IPs, skip routes, custom extension points
 
 ## Requirements
-> **hapi v19 (or later)** and **Node.js v12 (or newer)**
 
-This plugin requires **hapi v19** (or later) and **Node.js v12 or newer**.
-
-
-### Compatibility
-| Major Release | [hapi.js](https://github.com/hapijs/hapi) version | Node.js version |
-| --- | --- | --- |
-| `v3` | `>=17 hapi` | `>=12` |
-| `v2` | `>=17 hapi` | `>=8` |
-
+- **Node.js**: >= 18
+- **hapi**: >= 21
+- **Redis**: A running Redis instance or Redis Cluster
 
 ## Installation
-Add `hapi-rate-limitor` as a dependency to your project:
 
 ```bash
-npm i hapi-rate-limitor
+npm install @perdieminc/hapi-rate-limitor
 ```
 
+## Quick Start
 
-### Using hapi v18 or lower?
-Use the `2.x` release line:
+```javascript
+const Hapi = require('@hapi/hapi');
 
-```bash
-npm i hapi-rate-limitor@2
-```
+const server = new Hapi.Server({
+  port: 3000
+});
 
-
-## Usage
-The most straight forward to use `hapi-rate-limitor` is to register it to your hapi server.
-
-This will use the default configurations of [`async-ratelimiter`](https://github.com/microlinkhq/async-ratelimiter#api) and [ioredis](https://github.com/luin/ioredis/blob/master/API.md).
-
-```js
 await server.register({
-  plugin: require('hapi-rate-limitor')
-})
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    max: 60,                    // 60 requests
+    duration: 60 * 1000,        // per 60 seconds
+    namespace: 'my-app-limiter'
+  }
+});
 
-// went smooth like chocolate with default settings :)
+await server.start();
 ```
 
+## Redis Configuration
 
-## Plugin Options
-Customize the plugin’s default configuration with the following options:
+### Standard Redis Instance
 
-- **`max`**: Integer, default: `60`
-  - the maximum number of requests allowed in a `duration`
-- **`duration`**: Integer, default: `60000` (1 minute)
-  - the lifetime window keeping records of a request in milliseconds
-- **`namespace`**: String, default: `'hapi-rate-limitor'`
-  - the used prefix to create the rate limit identifier before storing the data
-- **`redis`**: Object, default: `undefined`
-  - the `redis` configuration property will be passed through to `ioredis` creating your custom Redis client
-- **`extensionPoint`**: String, default: `'onPostAuth'`
-  - the [request lifecycle extension point](https://futurestud.io/downloads/hapi/request-lifecycle) for rate limiting
-- **`userAttribute`**: String, default: `'id'`
-  - the property name identifying a user (credentials) for [dynamic rate limits](https://github.com/futurestudio/hapi-rate-limitor#dynamic-rate-limits). This option is used to access the value from `request.auth.credentials`.
-- **`userLimitAttribute`**: String, default: `'rateLimit'`
-  - the property name identifying the rate limit value on [dynamic rate limit](https://github.com/futurestudio/hapi-rate-limitor#dynamic-rate-limits). This option is used to access the value from `request.auth.credentials`.
-- **`view`**: String, default: `undefined`
-  - view path to render the view instead of throwing an error (this uses `h.view(yourView, { total, remaining, reset }).code(429)`)
-- **`enabled`**: Boolean, default: `true`
-  - a shortcut to enable or disable the plugin, e.g. when running tests
-- **`skip`**: Function, default: `() => false`
-  - an async function with the signature `async (request)` to determine whether to skip rate limiting for a given request. The `skip` function retrieves the incoming request as the only argument
-- **`ipWhitelist`**: Array, default: `[]`
-  - an array of whitelisted IP addresses that won’t be rate-limited. Requests from such IPs proceed the request lifecycle. Notice that the related responses won’t contain rate limit headers.
-- **`getIp`**: Function, default: `undefined`
-  - an async function with the signature `async (request)` to manually determine the requesting IP address. This is helpful if your load balancer provides the client IP address as the last item in the list of forwarded addresses (e.g. Heroku and AWS ELB)
-- **`emitter`**: Object, default: `server.events`
-  - an event emitter instance used to emit the [rate-limitting events](https://github.com/futurestudio/hapi-rate-limitor#events)
+The plugin supports multiple ways to configure a standard Redis connection:
 
-All other options are directly passed through to [async-ratelimiter](https://github.com/microlinkhq/async-ratelimiter#api).
+#### Connection String
 
-```js
+```javascript
 await server.register({
-  plugin: require('hapi-rate-limitor'),
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379'
+  }
+});
+```
+
+#### Configuration Object
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
   options: {
     redis: {
+      host: 'localhost',
       port: 6379,
-      host: '127.0.0.1'
-    },
-    extensionPoint: 'onPreAuth',
-    namespace: 'hapi-rate-limitor',
-    max: 2,                                     // a maximum of 2 requests
-    duration: 1000,                              // per second (the value is in milliseconds),
-    userAttribute: 'id',
-    userLimitAttribute: 'rateLimit',
-    view: 'rate-limit-exceeded',                // render this view when the rate limit exceeded
-    enabled: true,
-    skip: async (request) => {
-      return request.path.includes('/admin')    // example: disable rate limiting for the admin panel
-    },
-    ipWhitelist: ['1.1.1.1'],                   // list of IP addresses skipping rate limiting
-    getIp: async (request) => {                 // manually determine the requesting IP address
-      const ips = request.headers['x-forwarded-for'].split(',')
-
-      return ips[ips.length - 1]
-    },
-    emitter: yourEventEmitter,                  // your event emitter instance
+      password: 'your-password',
+      db: 0
+    }
   }
-})
-
-// went smooth like chocolate :)
+});
 ```
 
-You can also use a Redis connection string.
+### Custom Redis Instance
 
-```js
-await server.register({
-  plugin: require('hapi-rate-limitor'),
-  options: {
-    redis: 'redis://lolipop:SOME_PASSWORD@dokku-redis-lolipop:6379',
-    extensionPoint: 'onPreAuth',
-    namespace: 'hapi-rate-limitor'
-    // ... etc
+You can pass your own pre-configured Redis instance (useful for connection pooling or custom configurations):
+
+```javascript
+const Redis = require('ioredis');
+
+const redis = new Redis({
+  host: 'localhost',
+  port: 6379,
+  password: 'your-password',
+  retryStrategy: (times) => {
+    return Math.min(times * 50, 2000);
   }
-})
-
-// went smooth like chocolate :)
-```
-
-Please check the [async-ratelimiter API](https://github.com/microlinkhq/async-ratelimiter#api) for all options.
-
-
-### Events
-`hapi-rate-limitor` dispatches the following three events in the rate-limiting lifecycle:
-
-- `rate-limit:attempt`: before rate-limiting the request
-- `rate-limit:in-quota`: after rate-limiting and only if the request’s limit is in the quota
-- `rate-limit:exceeded`: after rate-limiting and only if the request’s quota is exceeded
-
-Each event listener receives the related request as the only parameter. Here’s a sample listener:
-
-```js
-
-emitter.on('rate-limit:exceeded', request => {
-  // handle rate-limiting exceeded
-})
-```
-
-You can pass your own event `emitter` instance as a config property while registering the `hapi-rate-limitor` plugin to your hapi server. By default, `hapi-rate-limitor` uses hapi’s server as an event emitter.
-
-```js
-const EventEmitter = require('events')
-
-const myEmitter = new EventEmitter()
+});
 
 await server.register({
-  plugin: require('hapi-rate-limitor'),
+  plugin: require('@perdieminc/hapi-rate-limitor'),
   options: {
-    emitter: myEmitter
-
-    // … other plugin options
+    redis: redis  // Pass your custom Redis instance
   }
-})
+});
 ```
 
+### Redis Cluster Support
 
-## Route Options
-Customize the plugin’s default configuration on routes. A use case for this is a login route where you want to reduce the request limit even lower than the default limit.
+The plugin fully supports Redis Cluster configurations:
 
-On routes, `hapi-rate-limitor` respects all options related to rate limiting. Precisely, all options that [async-ratelimiter](https://github.com/microlinkhq/async-ratelimiter#api) supports. It does not accept Redis connection options or identifiers for dynamic rate limiting.
+```javascript
+const Redis = require('ioredis');
 
-All other options are directly passed through to [async-ratelimiter](https://github.com/microlinkhq/async-ratelimiter#api).
-
-```js
-await server.register({
-  plugin: require('hapi-rate-limitor'),
-  options: {
-    redis: {
-      port: 6379,
-      host: '127.0.0.1'
-    },
-    namespace: 'hapi-rate-limitor',
-    max: 60,             // a maximum of 60 requests
-    duration: 60 * 1000, // per minute (the value is in milliseconds)
+const cluster = new Redis.Cluster([
+  { host: 'localhost', port: 7000 },
+  { host: 'localhost', port: 7001 },
+  { host: 'localhost', port: 7002 }
+], {
+  redisOptions: {
+    password: 'your-cluster-password'
   }
-})
+});
 
-await server.route({
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: cluster  // Pass your Redis Cluster instance
+  }
+});
+```
+
+> **Note**: When passing a custom Redis instance or cluster, the plugin will **not** automatically connect or disconnect. You are responsible for managing the connection lifecycle.
+
+## Configuration Options
+
+### Plugin Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | Boolean | `true` | Enable/disable rate limiting globally |
+| `redis` | String/Object/Redis | **required** | Redis connection string, config object, or Redis instance |
+| `max` | Number | `60` | Maximum number of requests allowed |
+| `duration` | Number | `60000` | Time window in milliseconds (default: 60 seconds) |
+| `namespace` | String | `'hapi-rate-limitor'` | Redis key namespace |
+| `userAttribute` | String | `'id'` | User identifier attribute in `request.auth.credentials` |
+| `userLimitAttribute` | String | `'rateLimit'` | User-specific rate limit attribute |
+| `ipWhitelist` | Array | `[]` | Array of whitelisted IP addresses |
+| `extensionPoint` | String | `'onPostAuth'` | Hapi extension point for rate limiting |
+| `view` | String | `undefined` | Path to custom view for rate limit exceeded |
+| `skip` | Function | `() => false` | Function to skip rate limiting for specific requests |
+| `getIp` | Function | `undefined` | Custom function to extract IP address |
+
+## Usage Examples
+
+### Basic Rate Limiting
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    max: 100,                   // 100 requests
+    duration: 60 * 1000,        // per minute
+    namespace: 'my-api'
+  }
+});
+```
+
+### Route-Specific Limits
+
+You can set different rate limits for specific routes:
+
+```javascript
+server.route({
   method: 'POST',
   path: '/login',
   options: {
-    handler: () {
-      // do the login handling
-    },
     plugins: {
       'hapi-rate-limitor': {
-        max: 5,              // a maximum of 5 requests
-        duration: 60 * 1000, // per minute
-        enabled: false       // but it’s actually not enabled ;-)
+        max: 5,                 // Only 5 login attempts
+        duration: 5 * 60 * 1000 // per 5 minutes
+      }
+    },
+    handler: async (request, h) => {
+      return { success: true };
+    }
+  }
+});
+```
+
+### Disable Rate Limiting for Specific Routes
+
+```javascript
+server.route({
+  method: 'GET',
+  path: '/health',
+  options: {
+    plugins: {
+      'hapi-rate-limitor': {
+        enabled: false  // No rate limiting for health checks
+      }
+    },
+    handler: async (request, h) => {
+      return { status: 'ok' };
+    }
+  }
+});
+```
+
+### IP Whitelist
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    ipWhitelist: [
+      '127.0.0.1',
+      '::1',
+      '10.0.0.0/8'  // Internal network
+    ]
+  }
+});
+```
+
+### User-Specific Rate Limits
+
+For authenticated users, you can set per-user rate limits:
+
+```javascript
+// In your authentication handler
+request.auth.credentials = {
+  id: 'user-123',
+  rateLimit: 1000  // This user gets 1000 requests per duration
+};
+```
+
+### Custom View for Rate Limit Exceeded
+
+```javascript
+await server.register([
+  {
+    plugin: require('@hapi/vision')
+  },
+  {
+    plugin: require('@perdieminc/hapi-rate-limitor'),
+    options: {
+      redis: 'redis://localhost:6379',
+      view: 'rate-limit-exceeded'  // Render this view when exceeded
+    }
+  }
+]);
+
+server.views({
+  engines: { html: require('handlebars') },
+  path: 'views'
+});
+```
+
+### Skip Rate Limiting Conditionally
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    skip: (request) => {
+      // Skip rate limiting for admin users
+      return request.auth.credentials?.role === 'admin';
+    }
+  }
+});
+```
+
+### Custom IP Detection
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    getIp: (request) => {
+      // Custom IP extraction (e.g., behind a proxy)
+      return request.headers['x-real-ip'] ||
+             request.headers['x-forwarded-for']?.split(',')[0] ||
+             request.info.remoteAddress;
+    }
+  }
+});
+```
+
+### Custom Extension Point
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    extensionPoint: 'onPreAuth'  // Rate limit before authentication
+  }
+});
+```
+
+## Rate Limit Events
+
+The plugin emits events that you can listen to:
+
+```javascript
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    redis: 'redis://localhost:6379',
+    emitter: {
+      on: (event, callback) => {
+        if (event === 'rate-limit:exceeded') {
+          callback((request) => {
+            console.log(`Rate limit exceeded for ${request.info.remoteAddress}`);
+          });
+        }
+
+        if (event === 'rate-limit:in-quota') {
+          callback((request) => {
+            console.log(`Request within quota: ${request.path}`);
+          });
+        }
       }
     }
   }
-})
-
-// went smooth like chocolate :)
+});
 ```
 
-Please check the [async-ratelimiter API](https://github.com/microlinkhq/async-ratelimiter#api) for all options.
+## Response Headers
 
+The plugin automatically adds rate limit headers to all responses:
 
-## Dynamic Rate Limits
-To make use of user-specific rate limits, you need to configure the `userAttribute` and `userLimitAttribute` attributes in the `hapi-rate-limitor` options.
-
-These attributes are used to determine the rate limit for an authenticated user. The `userAttribute` is the property name that uniquely identifies a user. The `userLimitAttribute` is the property name that contains the rate limit value.
-
-```js
-await server.register({
-  plugin: require('hapi-rate-limitor'),
-  options: {
-    userAttribute: 'id',
-    userLimitAttribute: 'rateLimit',
-    max: 500,                          // a maximum of 500 requests (default is 2500)
-    duration: 60 * 60 * 1000           // per hour (the value is in milliseconds)
-    // … other plugin options
-  }
-})
+```
+X-Rate-Limit-Limit: 60
+X-Rate-Limit-Remaining: 59
+X-Rate-Limit-Reset: 1639584000
 ```
 
-This will calculate the maximum requests individually for each authenticated user based on the user’s `id` and `'rateLimit'` attributes. Imagine the following user object as an authenticated user:
+- `X-Rate-Limit-Limit`: Maximum number of requests allowed
+- `X-Rate-Limit-Remaining`: Number of requests remaining in the current window
+- `X-Rate-Limit-Reset`: Unix timestamp (in seconds) when the rate limit resets
 
-```js
-/**
- * the authenticated user object may contain a custom rate limit attribute.
- * In this case, it’s called "rateLimit".
- */
-request.auth.credentials = {
-  id: 'custom-uuid',
-  rateLimit: 1750,
-  name: 'Marcus'
-  // … further attributes
+## Error Response
+
+When the rate limit is exceeded, the plugin returns a `429 Too Many Requests` response:
+
+```json
+{
+  "statusCode": 429,
+  "error": "Too Many Requests",
+  "message": "You have exceeded the request limit"
 }
 ```
 
-For this specific user, the maximum amount of requests is `1750` per hour (and not the plugin’s default `500`).
+## Advanced Configuration
 
-`hapi-rate-limitor` uses the plugin’s limit if the request is unauthenticated or `request.auth.credentials` doesn’t contain a rate-limit-related attribute.
+### Complete Example with All Options
 
+```javascript
+const Redis = require('ioredis');
 
-## Response Headers
-The plugin sets the following response headers:
+const redis = new Redis.Cluster([
+  { host: 'redis-node-1', port: 7000 },
+  { host: 'redis-node-2', port: 7001 },
+  { host: 'redis-node-3', port: 7002 }
+]);
 
-- `X-Rate-Limit-Limit`: total request limit (`max`) within `duration`
-- `X-Rate-Limit-Remaining`: remaining quota until reset
-- `X-Rate-Limit-Reset`: time since epoch in seconds that the rate limiting period will end
+await server.register({
+  plugin: require('@perdieminc/hapi-rate-limitor'),
+  options: {
+    enabled: true,
+    redis: redis,
+    max: 100,
+    duration: 60 * 1000,
+    namespace: 'my-app-rate-limiter',
+    userAttribute: 'userId',
+    userLimitAttribute: 'maxRequests',
+    ipWhitelist: ['127.0.0.1', '::1'],
+    extensionPoint: 'onPostAuth',
+    view: 'rate-limit-exceeded',
+    skip: (request) => {
+      return request.path.startsWith('/public');
+    },
+    getIp: (request) => {
+      return request.headers['x-forwarded-for']?.split(',')[0] ||
+             request.info.remoteAddress;
+    }
+  }
+});
+```
 
+## TypeScript Support
 
-## Feature Requests
-Do you miss a feature? Please don’t hesitate to
-[create an issue](https://github.com/futurestudio/hapi-rate-limitor/issues) with a short description of your desired addition to this plugin.
+The plugin includes TypeScript definitions:
 
+```typescript
+import { Server } from '@hapi/hapi';
+import * as RateLimitor from '@perdieminc/hapi-rate-limitor';
 
-## Links & Resources
+const server = new Server({ port: 3000 });
 
-- [hapi tutorial series](https://futurestud.io/tutorials/hapi-get-your-server-up-and-running) with 100+ tutorials
+await server.register({
+  plugin: RateLimitor,
+  options: {
+    redis: 'redis://localhost:6379',
+    max: 60,
+    duration: 60000
+  }
+});
+```
 
+## Testing
 
-## Contributing
-
-1.  Create a fork
-2.  Create your feature branch: `git checkout -b my-feature`
-3.  Commit your changes: `git commit -am 'Add some feature'`
-4.  Push to the branch: `git push origin my-new-feature`
-5.  Submit a pull request 🚀
-
+```bash
+npm test
+```
 
 ## License
 
-MIT © [Future Studio](https://futurestud.io)
+MIT © [Marcus Pöhls](https://futurestud.io)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Credits
+
+This plugin uses:
+- [ioredis](https://github.com/luin/ioredis) for Redis connectivity
+- [async-ratelimiter](https://github.com/microlinkhq/async-ratelimiter) for rate limiting logic
+- [@supercharge/request-ip](https://github.com/supercharge/request-ip) for IP detection
 
 ---
 
-> [futurestud.io](https://futurestud.io) &nbsp;&middot;&nbsp;
-> GitHub [@futurestudio](https://github.com/futurestudio/) &nbsp;&middot;&nbsp;
-> Twitter [@futurestud_io](https://twitter.com/futurestud_io)
+**Made with ❤️ for the hapi.js community**
+
