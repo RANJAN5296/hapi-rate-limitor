@@ -454,3 +454,39 @@ This plugin uses:
 
 **Made with ❤️ for the hapi.js community**
 
+
+## Development & Release
+
+### Creating a New Release
+
+When you're ready to release a new version:
+
+1. **Update the version** in `package.json`:
+   ```bash
+   npm version patch  # For bug fixes (4.0.1 -> 4.0.2)
+   npm version minor  # For new features (4.0.1 -> 4.1.0)
+   npm version major  # For breaking changes (4.0.1 -> 5.0.0)
+   ```
+
+2. **Create and push a git tag**:
+   ```bash
+   git tag -a v4.0.1 -m "Release v4.0.1 - Enhanced Redis Support"
+   git push origin v4.0.1
+   ```
+
+3. **Publish to npm** (if applicable):
+   ```bash
+   npm publish --access public
+   ```
+
+### Syncing with Upstream
+
+To get the latest updates from the original repository:
+
+```bash
+git fetch upstream
+git merge upstream/master
+git push origin master
+```
+
+See the [upstream repository](https://github.com/futurestudio/hapi-rate-limitor) for the latest changes.
