@@ -53,7 +53,7 @@
   "types": "typings",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/perdieminc/hapi-rate-limitor.git"
+    "url": "https://github.com/PerDiemInc/hapi-rate-limitor"
   },
   "scripts": {
     "coverage": "npm test",
